@@ -137,7 +137,6 @@
           <div class="p-3 glass rounded">
             <div class="flex items-center justify-between mb-2">
               <h3 class="font-semibold">Top Offices by Digital %</h3>
-              <div class="text-sm">(based on selected metric)</div>
             </div>
             <canvas id="chart-top-offices" height="240"></canvas>
           </div>
@@ -277,6 +276,11 @@
               <button id="export-settings" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export Settings JSON</button>
               <button id="import-settings" class="px-3 py-1 rounded bg-gray-200 text-sm" title="Import JSON settings">Import Settings (paste JSON)</button>
             </div>
+            <div class="mt-4">
+              <div class="text-sm font-semibold mb-1">Digital Transaction Channels</div>
+              <div id="digital-channel-settings" class="flex flex-wrap gap-2 text-xs"></div>
+              <p class="text-[11px] text-gray-500 mt-1">Superadmin can mark which transaction types are treated as digital for KPIs, conversion %, and charts.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -290,7 +294,7 @@
 
 <script>
 // ===== App State & Config =====
-const APP_VERSION = '2025-11-13-metric-toggle-v3-overview-pdf';
+const APP_VERSION = '2025-11-13-metric-toggle-v4-digital-channel-ui';
 const DEFAULT_PASSWORDS = { superadmin:'Super@2025', admin:'Admin@2025', karna:'Karna@2025', nkro:'Nkro@2025', skro:'Skro@2025', bgro:'Bgro@2025' };
 const DEFAULT_USERS = { superadmin:{passwordHash:'',role:'superadmin'}, admin:{passwordHash:'',role:'admin'}, karna:{passwordHash:'',role:'karna'}, nkro:{passwordHash:'',role:'nkro'}, skro:{passwordHash:'',role:'skro'}, bgro:{passwordHash:'',role:'bgro'} };
 let SETTINGS = {digitalChannels:['credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','posb','ippb'], columns: []};
@@ -338,6 +342,7 @@ function navigate(){
     $('current-user').innerText = `${STATE.user.username} (${STATE.user.role})`;
     $('tab-admin-li').classList.toggle('hidden', STATE.user.role!=='superadmin');
     showTab('overview');
+    renderDigitalChannelSettings();
   } else {
     header.classList.add('hidden');
     footer.classList.add('hidden');
@@ -437,6 +442,36 @@ function renderOverviewSummary(){
   }
 }
 
+// ===== Digital channel settings UI =====
+function renderDigitalChannelSettings(){
+  const box = $('digital-channel-settings');
+  if(!box) return;
+  box.innerHTML='';
+  const isSuper = STATE.user && STATE.user.role==='superadmin';
+  CHANNELS.forEach(ch=>{
+    const label = document.createElement('label');
+    label.className = 'inline-flex items-center gap-1 border px-2 py-1 rounded-full bg-white/70';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = ch;
+    cb.checked = SETTINGS.digitalChannels.includes(ch);
+    if(!isSuper) cb.disabled = true;
+    cb.addEventListener('change', ()=>{
+      if(!isSuper) return;
+      if(cb.checked){
+        if(!SETTINGS.digitalChannels.includes(ch)) SETTINGS.digitalChannels.push(ch);
+      } else {
+        SETTINGS.digitalChannels = SETTINGS.digitalChannels.filter(x=>x!==ch);
+      }
+      saveSettings();
+      renderAll();
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(ch));
+    box.appendChild(label);
+  });
+}
+
 // ===== Charts =====
 let chartChannels=null, chartTop=null, chartChannels2=null, chartTop2=null, chartOfficeStack=null; let chartType='bar';
 function effectiveMetric(selectId){ const sel=$(selectId); const v= sel? sel.value : 'global'; return v==='global'? STATE.globalMetric : v; }
@@ -492,7 +527,7 @@ function exportOverviewPDF(){ if(!STATE.filteredData.length){ alert('No data loa
   doc.autoTable({startY:y, head:head, body:body, styles:{fontSize:8}, headStyles:{fillColor:[239,68,68]}});
   doc.save('overview-review.pdf'); }
 function downloadTemplate(){ const cols = SETTINGS.columns.length?SETTINGS.columns:['office-name','office-id','cash','cheque','credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','product-name']; const csv = Papa.unparse({fields:cols, data: []}); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); saveAs(blob,'dt_template.csv'); }
-function importSettings(){ const txt = prompt('Paste settings JSON'); if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderAll(); }catch(e){ alert('Invalid JSON') } }
+function importSettings(){ const txt = prompt('Paste settings JSON'); if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderAll(); renderDigitalChannelSettings(); }catch(e){ alert('Invalid JSON') } }
 
 // ===== File & Controls Events =====
 function bindEvents(){
@@ -544,21 +579,4 @@ function runSelfTests(){
     if(!(Array.isArray(present)&&counts&&typeof counts==='object')) throw new Error('Bad structure');
     if(present.includes('cash') && counts.cash!==4) throw new Error('Count mismatch for cash');
     if(present.includes('upi') && counts.upi!==7) throw new Error('Count mismatch for upi');
-    STATE.filteredData = bak.data; SETTINGS.columns = bak.cols;
-    console.log('%cSelf-tests passed','color:green');
-  }catch(e){ console.warn('Self-test failed:', e.message); }
-}
-
-// ===== Boot =====
-window.addEventListener('DOMContentLoaded', async ()=>{
-  await initDefaults();
-  loadSession();
-  if(STATE.user) location.hash = '#/dashboard'; else location.hash = '#/login';
-  bindEvents();
-  renderUserList();
-  navigate();
-  runSelfTests();
-});
-</script>
-</body>
-</html>
+    STATE.filter
