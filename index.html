@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    :root{ --footer-h:40px; }
+    :root{ --footer-h:56px; }
     body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
     .glass{background: rgba(255,255,255,0.6); backdrop-filter: blur(6px);} 
     .kpibox{border-radius:12px;padding:14px}
@@ -24,6 +24,7 @@
     .table-scroll{max-height:360px; overflow:auto}
     .tab-btn[aria-selected="true"]{border-bottom:3px solid #ef4444; font-weight:600}
     code{background:#f1f5f9;padding:2px 6px;border-radius:6px}
+    /* keep footer off login and pinned on dashboard */
     #app-footer{height:var(--footer-h)}
   </style>
 </head>
@@ -67,28 +68,28 @@
   <!-- Page: Dashboard (only after login) -->
   <main id="page-dashboard" class="hidden pt-6 pb-[calc(var(--footer-h)+16px)]">
     <div class="max-w-7xl mx-auto px-6">
+      <!-- Global metric toggle -->
+      <div class="glass p-3 rounded-lg mb-4 flex items-center gap-4 flex-wrap">
+        <div class="text-sm font-medium">Metric mode:</div>
+        <label class="text-sm flex items-center gap-1"><input type="radio" name="globalMetric" value="count" checked> Count</label>
+        <label class="text-sm flex items-center gap-1"><input type="radio" name="globalMetric" value="amount"> Amount (₹)</label>
+        <label class="text-sm flex items-center gap-1"><input type="checkbox" id="chk-dual-kpi"> Show both KPI sets side‑by‑side</label>
+      </div>
+
       <!-- Tab Bar -->
       <nav class="border-b mb-4">
         <ul class="flex gap-6" role="tablist">
           <li><button class="tab-btn py-2" data-tab="overview" aria-selected="true">Overview</button></li>
           <li><button class="tab-btn py-2" data-tab="channels">Channels</button></li>
-          <li><button class="tab-btn py-2" data-tab="offices">Division/Office</button></li>
+          <li><button class="tab-btn py-2" data-tab="offices">Offices</button></li>
+          <li><button class="tab-btn py-2" data-tab="data">Data</button></li>
           <li><button class="tab-btn py-2" data-tab="reports">Reports</button></li>
-          <li class="ml-auto"><button class="tab-btn py-2" data-tab="data">Data</button></li>
           <li id="tab-admin-li" class="hidden"><button class="tab-btn py-2" data-tab="admin">Admin</button></li>
         </ul>
       </nav>
 
       <!-- Tab: Overview -->
       <section data-tabpanel="overview">
-        <!-- Metric controls under tab -->
-        <div class="glass p-3 rounded-lg mb-4 flex items-center gap-4 flex-wrap">
-          <div class="text-sm font-medium">Metric mode:</div>
-          <label class="text-sm flex items-center gap-1"><input type="radio" name="globalMetric" value="count" checked> Count</label>
-          <label class="text-sm flex items-center gap-1"><input type="radio" name="globalMetric" value="amount"> Amount (₹)</label>
-          <label class="text-sm flex items-center gap-1"><input type="checkbox" id="chk-dual-kpi"> Show both KPI sets side‑by‑side</label>
-        </div>
-
         <!-- KPI rows: single or dual -->
         <div id="kpi-wrapper" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"></div>
         <div id="kpi-wrapper-amount" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"></div>
@@ -137,6 +138,7 @@
           <div class="p-3 glass rounded">
             <div class="flex items-center justify-between mb-2">
               <h3 class="font-semibold">Top Offices by Digital %</h3>
+              <div class="text-sm">(based on selected metric)</div>
             </div>
             <canvas id="chart-top-offices" height="240"></canvas>
           </div>
@@ -170,7 +172,7 @@
         </div>
       </section>
 
-      <!-- Tab: Division/Office -->
+      <!-- Tab: Offices -->
       <section data-tabpanel="offices" class="hidden">
         <div class="p-3 glass rounded mb-3">
           <div class="flex items-center justify-between mb-2">
@@ -235,66 +237,21 @@
       <section data-tabpanel="reports" class="hidden">
         <div class="glass p-4 rounded-md mb-4 flex items-center gap-3 flex-wrap">
           <button id="btn-export-csv" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export CSV</button>
-          <button id="btn-export-pdf" class="px-3 py-1 rounded bg-gray-700 text-white text-sm">Export PDF (Raw Data)</button>
-          <button id="btn-export-overview" class="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Overview PDF (Review)</button>
+          <button id="btn-export-pdf" class="px-3 py-1 rounded bg-gray-700 text-white text-sm">Export PDF</button>
           <button id="btn-download-template" class="px-3 py-1 rounded bg-gray-200 text-sm">Download Template CSV</button>
-        </div>
-      </section>
-
-      <!-- Tab: Admin (Superadmin only) -->
-      <section data-tabpanel="admin" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-3 glass rounded">
-            <strong>Manage Users</strong>
-            <div class="mt-2 text-sm">Add / Edit user credentials and roles.</div>
-            <div class="mt-2">
-              <input id="new-username" placeholder="username" class="border p-1 rounded mr-1" />
-              <input id="new-password" placeholder="password" type="password" class="border p-1 rounded mr-1" />
-              <select id="new-role" class="border p-1 rounded">
-                <option value="superadmin">Superadmin</option>
-                <option value="admin">Admin</option>
-                <option value="karna">KARNA</option>
-                <option value="nkro">NKRO</option>
-                <option value="skro">SKRO</option>
-                <option value="bgro">BGRO</option>
-                <option value="user">User</option>
-              </select>
-              <button id="btn-add-user" class="ml-2 px-2 py-1 rounded bg-green-500 text-white text-sm">Add / Update</button>
-            </div>
-            <div class="mt-3 text-sm">Existing Users</div>
-            <ul id="user-list" class="mt-2 text-sm"></ul>
-          </div>
-
-          <div class="p-3 glass rounded">
-            <strong>Template & Export Settings</strong>
-            <div class="mt-2 text-sm">Import/Export settings JSON and upload a CSV template to set columns.</div>
-            <div class="mt-2">
-              <label class="text-sm">Upload mapping template (CSV sample)</label>
-              <input id="template-upload" type="file" accept=".csv" class="mt-1" />
-            </div>
-            <div class="mt-3 flex gap-2">
-              <button id="export-settings" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export Settings JSON</button>
-              <button id="import-settings" class="px-3 py-1 rounded bg-gray-200 text-sm" title="Import JSON settings">Import Settings (paste JSON)</button>
-            </div>
-            <div class="mt-4">
-              <div class="text-sm font-semibold mb-1">Digital Transaction Channels</div>
-              <div id="digital-channel-settings" class="flex flex-wrap gap-2 text-xs"></div>
-              <p class="text-[11px] text-gray-500 mt-1">Superadmin can mark which transaction types are treated as digital for KPIs, conversion %, and charts.</p>
-            </div>
-          </div>
         </div>
       </section>
     </div>
   </main>
 
   <!-- App footer (hidden on login, pinned on dashboard) -->
-  <footer id="app-footer" class="hidden fixed bottom-0 left-0 right-0 bg-white/80 glass border-t text-[11px] text-gray-600">
-    <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-center w-full">© NKR‑KA Digital Transactions Monitoring</div>
+  <footer id="app-footer" class="hidden fixed bottom-0 left-0 right-0 bg-white/80 glass border-t text-xs text-gray-600">
+    <div class="max-w-7xl mx-auto px-6 h-full flex items-center">© NKR‑KA Digital Transactions Monitoring</div>
   </footer>
 
 <script>
 // ===== App State & Config =====
-const APP_VERSION = '2025-11-13-metric-toggle-v4-digital-channel-ui';
+const APP_VERSION = '2025-11-13-metric-toggle-v1';
 const DEFAULT_PASSWORDS = { superadmin:'Super@2025', admin:'Admin@2025', karna:'Karna@2025', nkro:'Nkro@2025', skro:'Skro@2025', bgro:'Bgro@2025' };
 const DEFAULT_USERS = { superadmin:{passwordHash:'',role:'superadmin'}, admin:{passwordHash:'',role:'admin'}, karna:{passwordHash:'',role:'karna'}, nkro:{passwordHash:'',role:'nkro'}, skro:{passwordHash:'',role:'skro'}, bgro:{passwordHash:'',role:'bgro'} };
 let SETTINGS = {digitalChannels:['credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','posb','ippb'], columns: []};
@@ -308,14 +265,12 @@ const TILE_COLORS = {
 };
 
 // ===== Helpers =====
-function $(id){ return document.getElementById(id); }
-function on(id, evt, handler){ const el=$(id); if(el){ el.addEventListener(evt, handler); } else { console.debug('[bind skipped]', id); } }
 async function sha256(msg){ const enc=new TextEncoder(); const data=enc.encode(msg); const hash=await crypto.subtle.digest('SHA-256',data); return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function saveSettings(){ localStorage.setItem('dt_settings', JSON.stringify(SETTINGS)); }
 function loadSettings(){ SETTINGS = JSON.parse(localStorage.getItem('dt_settings')) || SETTINGS; }
 function saveSession(){ localStorage.setItem('dt_session', JSON.stringify(STATE.user)); }
 function loadSession(){ try{ STATE.user = JSON.parse(localStorage.getItem('dt_session')); }catch(e){ STATE.user=null; } }
-function showMsg(msg,id='auth-message'){ const el=$(id); if(el) el.innerText=msg; }
+function showMsg(msg,id='auth-message'){ const el=document.getElementById(id); if(el) el.innerText=msg; }
 
 // ===== Init Defaults =====
 async function initDefaults(){
@@ -329,20 +284,19 @@ async function initDefaults(){
 function requireAuth(){ if(!STATE.user){ location.hash = '#/login'; return false;} return true; }
 function navigate(){
   const route = location.hash || '#/login';
-  const header = $('app-header');
-  const footer = $('app-footer');
-  const loginPage = $('page-login');
-  const dashPage = $('page-dashboard');
+  const header = document.getElementById('app-header');
+  const footer = document.getElementById('app-footer');
+  const loginPage = document.getElementById('page-login');
+  const dashPage = document.getElementById('page-dashboard');
   if(route.startsWith('#/dashboard')){
     if(!requireAuth()) return;
     header.classList.remove('hidden');
     footer.classList.remove('hidden');
     loginPage.classList.add('hidden');
     dashPage.classList.remove('hidden');
-    $('current-user').innerText = `${STATE.user.username} (${STATE.user.role})`;
-    $('tab-admin-li').classList.toggle('hidden', STATE.user.role!=='superadmin');
-    showTab('overview');
-    renderDigitalChannelSettings();
+    document.getElementById('current-user').innerText = `${STATE.user.username} (${STATE.user.role})`;
+    document.getElementById('tab-admin-li').classList.toggle('hidden', STATE.user.role!=='superadmin');
+    if(!route.includes('?tab=')) showTab('overview');
   } else {
     header.classList.add('hidden');
     footer.classList.add('hidden');
@@ -354,8 +308,8 @@ window.addEventListener('hashchange', navigate);
 
 // ===== Auth =====
 async function login(){
-  const user = $('login-username').value.trim();
-  const pwd = $('login-password').value;
+  const user = document.getElementById('login-username').value.trim();
+  const pwd = document.getElementById('login-password').value;
   if(!user||!pwd){ showMsg('Enter username & password'); return }
   const users = JSON.parse(localStorage.getItem('dt_users'));
   if(!users[user]){ showMsg('User not found'); return }
@@ -381,14 +335,14 @@ function showTab(name){
 }
 
 // ===== Data & UI =====
-function prepareFilters(){ const select=$('filter-office'); if(!select) return; select.innerHTML=''; const offices=Array.from(new Set(STATE.rawData.map(r=>r['office-name']||r['office']||'Unknown'))).sort(); const opt=document.createElement('option'); opt.value=''; opt.innerText='All Offices'; select.appendChild(opt); for(const o of offices){ const oel=document.createElement('option'); oel.value=o; oel.innerText=o; select.appendChild(oel); } }
-function applyFilters(){ let d=STATE.rawData.slice(); const f=($('filter-office')||{}).value||''; const s=(($('search-text')||{}).value||'').trim().toLowerCase(); if(f) d=d.filter(r=>(r['office-name']||r['office']||'').toString()===f); if(s) d=d.filter(r=> Object.values(r).join(' ').toLowerCase().includes(s)); STATE.filteredData=d; renderTable(); renderAll(); showMsg('Data filtered.','auth-message'); }
-function renderTable(){ const th=$('table-headers'); const tbody=$('table-body'); if(!th||!tbody) return; th.innerHTML=''; tbody.innerHTML=''; const cols=SETTINGS.columns; for(const c of cols){ const thc=document.createElement('th'); thc.className='p-2 text-left'; thc.innerText=c; th.appendChild(thc); } for(const row of STATE.filteredData){ const tr=document.createElement('tr'); for(const c of cols){ const td=document.createElement('td'); td.className='p-2'; td.innerText=row[c]===undefined?'':row[c]; tr.appendChild(td);} tbody.appendChild(tr);} }
+function prepareFilters(){ const select=document.getElementById('filter-office'); if(!select) return; select.innerHTML=''; const offices=Array.from(new Set(STATE.rawData.map(r=>r['office-name']||r['office']||'Unknown'))).sort(); const opt=document.createElement('option'); opt.value=''; opt.innerText='All Offices'; select.appendChild(opt); for(const o of offices){ const oel=document.createElement('option'); oel.value=o; oel.innerText=o; select.appendChild(oel); } }
+function applyFilters(){ let d=STATE.rawData.slice(); const f=(document.getElementById('filter-office')||{}).value||''; const s=((document.getElementById('search-text')||{}).value||'').trim().toLowerCase(); if(f) d=d.filter(r=>(r['office-name']||r['office']||'').toString()===f); if(s) d=d.filter(r=> Object.values(r).join(' ').toLowerCase().includes(s)); STATE.filteredData=d; renderTable(); renderAll(); }
+function renderTable(){ const th=document.getElementById('table-headers'); const tbody=document.getElementById('table-body'); if(!th||!tbody) return; th.innerHTML=''; tbody.innerHTML=''; const cols=SETTINGS.columns; for(const c of cols){ const thc=document.createElement('th'); thc.className='p-2 text-left'; thc.innerText=c; th.appendChild(thc); } for(const row of STATE.filteredData){ const tr=document.createElement('tr'); for(const c of cols){ const td=document.createElement('td'); td.className='p-2'; td.innerText=row[c]===undefined?'':row[c]; tr.appendChild(td);} tbody.appendChild(tr);} }
 
 function renderKPIs(){
-  const kpiWrap = $('kpi-wrapper');
-  const kpiWrapAmt = $('kpi-wrapper-amount');
-  if(kpiWrap) kpiWrap.innerHTML=''; if(kpiWrapAmt) kpiWrapAmt.innerHTML='';
+  const kpiWrap = document.getElementById('kpi-wrapper');
+  const kpiWrapAmt = document.getElementById('kpi-wrapper-amount');
+  kpiWrap.innerHTML=''; kpiWrapAmt.innerHTML='';
 
   // COUNT metrics
   const {present:pc, counts} = getChannelCounts();
@@ -407,29 +361,28 @@ function renderKPIs(){
 
   // Build KPI cards
   function card(label, value, extraClass='good'){ const div=document.createElement('div'); div.className=`kpibox glass p-4 ${extraClass}`; div.innerHTML=`<div class='text-sm'>${label}</div><div class='text-2xl font-bold'>${value}</div>`; return div; }
+  // Show according to global + dual toggle
   const mode = STATE.globalMetric; const dual = STATE.dualKPI;
   const kpiCountRow=[ card('Total Transactions (count)', totalCount.toLocaleString(),'good'), card('Digital (count)', digitalCount.toLocaleString(),'warning'), card('Conversion (Cash → Digital)', convCount+'%','bad')];
   const kpiAmtRow=[ card('Total Transactions (amount)', fmtINR.format(totalAmt),'good'), card('Digital (amount)', fmtINR.format(digitalAmt),'warning'), card('Conversion (Cash → Digital)', convAmt+'%','bad')];
 
-  if(kpiWrap){
-    if(mode==='count' && !dual){ kpiWrap.append(...kpiCountRow); if(kpiWrapAmt) kpiWrapAmt.classList.add('hidden'); }
-    else if(mode==='amount' && !dual){ kpiWrap.append(...kpiAmtRow); if(kpiWrapAmt) kpiWrapAmt.classList.add('hidden'); }
-    else { // dual
-      kpiWrap.append(...kpiCountRow);
-      if(kpiWrapAmt){ kpiWrapAmt.classList.remove('hidden'); kpiWrapAmt.append(...kpiAmtRow); }
-    }
+  if(mode==='count' && !dual){ kpiWrap.append(...kpiCountRow); kpiWrapAmt.classList.add('hidden'); }
+  else if(mode==='amount' && !dual){ kpiWrap.append(...kpiAmtRow); kpiWrapAmt.classList.add('hidden'); }
+  else { // dual
+    kpiWrap.append(...kpiCountRow);
+    kpiWrapAmt.classList.remove('hidden');
+    kpiWrapAmt.append(...kpiAmtRow);
   }
 
   renderOverviewSummary();
 }
 
 function renderOverviewSummary(){
-  const box=$('overview-summary'); if(!box) return; box.innerHTML='';
+  const box=document.getElementById('overview-summary'); if(!box) return; box.innerHTML='';
   const {present:pc, counts} = getChannelCounts();
   const {present:pa, amts} = getChannelAmounts();
   const present = Array.from(new Set([...pc, ...pa]));
-  const sel = $('sel-tile-metric');
-  const tileMode = (sel? sel.value : 'both');
+  const tileMode = (document.getElementById('sel-tile-metric')||{value:'both'}).value;
   for(const ch of present){
     const cnt = counts[ch]||0; const amt = amts[ch]||0;
     const div = document.createElement('div');
@@ -442,39 +395,9 @@ function renderOverviewSummary(){
   }
 }
 
-// ===== Digital channel settings UI =====
-function renderDigitalChannelSettings(){
-  const box = $('digital-channel-settings');
-  if(!box) return;
-  box.innerHTML='';
-  const isSuper = STATE.user && STATE.user.role==='superadmin';
-  CHANNELS.forEach(ch=>{
-    const label = document.createElement('label');
-    label.className = 'inline-flex items-center gap-1 border px-2 py-1 rounded-full bg-white/70';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = ch;
-    cb.checked = SETTINGS.digitalChannels.includes(ch);
-    if(!isSuper) cb.disabled = true;
-    cb.addEventListener('change', ()=>{
-      if(!isSuper) return;
-      if(cb.checked){
-        if(!SETTINGS.digitalChannels.includes(ch)) SETTINGS.digitalChannels.push(ch);
-      } else {
-        SETTINGS.digitalChannels = SETTINGS.digitalChannels.filter(x=>x!==ch);
-      }
-      saveSettings();
-      renderAll();
-    });
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(ch));
-    box.appendChild(label);
-  });
-}
-
 // ===== Charts =====
 let chartChannels=null, chartTop=null, chartChannels2=null, chartTop2=null, chartOfficeStack=null; let chartType='bar';
-function effectiveMetric(selectId){ const sel=$(selectId); const v= sel? sel.value : 'global'; return v==='global'? STATE.globalMetric : v; }
+function effectiveMetric(selectId){ const sel=document.getElementById(selectId); const v= sel? sel.value : 'global'; return v==='global'? STATE.globalMetric : v; }
 function dataByMetric(metric){
   if(metric==='amount'){ const {present, amts}=getChannelAmounts(); return {labels:present, values:present.map(ch=> amts[ch]||0)}; }
   const {present, counts}=getChannelCounts(); return {labels:present, values:present.map(ch=> counts[ch]||0)};
@@ -482,10 +405,10 @@ function dataByMetric(metric){
 function renderCharts(){
   const mainMetric = effectiveMetric('sel-chart-metric-main');
   const {labels, values} = dataByMetric(mainMetric);
-  const canvas = $('chart-channels'); if(canvas){ const ctx=canvas.getContext('2d'); if(chartChannels) chartChannels.destroy(); chartChannels = new Chart(ctx,{type: chartType, data:{labels, datasets:[{label: mainMetric==='amount'?'Amount (₹)':'Transactions (count)', data: values}]}, options:{responsive:true}}); }
+  const canvas = document.getElementById('chart-channels'); if(canvas){ const ctx=canvas.getContext('2d'); if(chartChannels) chartChannels.destroy(); chartChannels = new Chart(ctx,{type: chartType, data:{labels, datasets:[{label: mainMetric==='amount'?'Amount (₹)':'Transactions (count)', data: values}]}, options:{responsive:true}}); }
 
   // Top offices by digital % based on metric
-  const ctx2El = $('chart-top-offices');
+  const ctx2El = document.getElementById('chart-top-offices');
   if(ctx2El){
     const metric = mainMetric;
     const ctx2 = ctx2El.getContext('2d');
@@ -496,87 +419,68 @@ function renderCharts(){
   }
 }
 function renderCharts2(){
-  const typ2 = ($( 'sel-chart-type-2')||{value:chartType}).value||chartType;
+  const typ2 = (document.getElementById('sel-chart-type-2')||{value:chartType}).value||chartType;
   const met2 = effectiveMetric('sel-chart-metric-2');
   const {labels, values} = dataByMetric(met2);
-  const can1=$('chart-channels-2'); if(can1){ const ctx=can1.getContext('2d'); if(chartChannels2) chartChannels2.destroy(); chartChannels2 = new Chart(ctx,{type: typ2, data:{labels, datasets:[{label: met2==='amount'?'Amount (₹)':'Transactions (count)', data: values}]}, options:{responsive:true}}); }
+  const can1=document.getElementById('chart-channels-2'); if(can1){ const ctx=can1.getContext('2d'); if(chartChannels2) chartChannels2.destroy(); chartChannels2 = new Chart(ctx,{type: typ2, data:{labels, datasets:[{label: met2==='amount'?'Amount (₹)':'Transactions (count)', data: values}]}, options:{responsive:true}}); }
 
   // Top offices by digital (bar, 20)
   const metOff = effectiveMetric('sel-office-metric');
-  const ctxOffEl = $('chart-top-offices-2'); if(ctxOffEl){ const ctx=ctxOffEl.getContext('2d'); const officeMap={}; for(const r of STATE.filteredData){ const o=r['office-name']||r['office']||'Unknown'; officeMap[o]=officeMap[o]||{digital:0}; if(metOff==='amount'){ officeMap[o].digital += sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } else { officeMap[o].digital += sumCount(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } } const arr=Object.keys(officeMap).map(o=>({office:o, v:officeMap[o].digital})).sort((a,b)=>b.v-a.v).slice(0,20); if(chartTop2) chartTop2.destroy(); chartTop2 = new Chart(ctx,{type:'bar', data:{labels:arr.map(a=>a.office), datasets:[{label: metOff==='amount'?'Digital (₹)':'Digital (count)', data:arr.map(a=>a.v)}]}, options:{indexAxis:'y',responsive:true}}); }
+  const ctxOffEl = document.getElementById('chart-top-offices-2'); if(ctxOffEl){ const ctx=ctxOffEl.getContext('2d'); const officeMap={}; for(const r of STATE.filteredData){ const o=r['office-name']||r['office']||'Unknown'; officeMap[o]=officeMap[o]||{digital:0}; if(metOff==='amount'){ officeMap[o].digital += sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } else { officeMap[o].digital += sumCount(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } } const arr=Object.keys(officeMap).map(o=>({office:o, v:officeMap[o].digital})).sort((a,b)=>b.v-a.v).slice(0,20); if(chartTop2) chartTop2.destroy(); chartTop2 = new Chart(ctx,{type:'bar', data:{labels:arr.map(a=>a.office), datasets:[{label: metOff==='amount'?'Digital (₹)':'Digital (count)', data:arr.map(a=>a.v)}]}, options:{indexAxis:'y',responsive:true}}); }
 
   // Stacked Cash vs Digital
   const metStack = effectiveMetric('sel-office-stack-metric');
-  const stEl = $('chart-office-stacked'); if(stEl){ const ctx=stEl.getContext('2d'); const officeMap={}; for(const r of STATE.filteredData){ const o=r['office-name']||r['office']||'Unknown'; officeMap[o]=officeMap[o]||{cash:0,digital:0}; if(metStack==='amount'){ officeMap[o].cash += sumNumeric(r,['cash'].filter(c=>SETTINGS.columns.includes('cash'))); officeMap[o].digital += sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } else { officeMap[o].cash += sumCount(r,['cash'].filter(c=>SETTINGS.columns.includes('cash'))); officeMap[o].digital += sumCount(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } } const labels=Object.keys(officeMap); const cash=labels.map(o=>officeMap[o].cash); const dig=labels.map(o=>officeMap[o].digital); if(chartOfficeStack) chartOfficeStack.destroy(); chartOfficeStack = new Chart(ctx,{type:'bar', data:{labels, datasets:[{label:'Cash', data:cash, stack:'tot'},{label:'Digital', data:dig, stack:'tot'}]}, options:{responsive:true, scales:{x:{stacked:true}, y:{stacked:true}}}}); }
+  const stEl = document.getElementById('chart-office-stacked'); if(stEl){ const ctx=stEl.getContext('2d'); const officeMap={}; for(const r of STATE.filteredData){ const o=r['office-name']||r['office']||'Unknown'; officeMap[o]=officeMap[o]||{cash:0,digital:0}; if(metStack==='amount'){ officeMap[o].cash += sumNumeric(r,['cash'].filter(c=>SETTINGS.columns.includes('cash'))); officeMap[o].digital += sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } else { officeMap[o].cash += sumCount(r,['cash'].filter(c=>SETTINGS.columns.includes('cash'))); officeMap[o].digital += sumCount(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); } } const labels=Object.keys(officeMap); const cash=labels.map(o=>officeMap[o].cash); const dig=labels.map(o=>officeMap[o].digital); if(chartOfficeStack) chartOfficeStack.destroy(); chartOfficeStack = new Chart(ctx,{type:'bar', data:{labels, datasets:[{label:'Cash', data:cash, stack:'tot'},{label:'Digital', data:dig, stack:'tot'}]}, options:{responsive:true, scales:{x:{stacked:true}, y:{stacked:true}}}}); }
 }
 
 function renderAll(){ renderKPIs(); renderCharts(); renderCharts2(); }
 
 // ===== Exports & Template =====
 function exportCSV(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const cols = SETTINGS.columns; const csv = Papa.unparse({fields:cols, data: STATE.filteredData.map(r=>cols.map(c=>r[c]||''))}); const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); saveAs(blob, 'exported-data.csv'); }
-function exportPDF(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cols = SETTINGS.columns.slice(0,10); const rows = STATE.filteredData.map(r=>cols.map(c=>r[c]||'')); doc.text('Digital Transactions – Raw Data', 14, 16); doc.autoTable({startY:22, head:[cols], body:rows}); doc.save('raw-data-report.pdf'); }
-function exportOverviewPDF(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const { jsPDF } = window.jspdf; const doc = new jsPDF('p','mm','a4'); const pageWidth = doc.internal.pageSize.getWidth(); let y = 18;
-  const title = 'Digital Transactions – Overview Review'; doc.setFontSize(16); doc.text(title, pageWidth/2, y, {align:'center'}); y+=8; doc.setFontSize(10); const now = new Date(); doc.text(`Generated on: ${now.toLocaleString('en-IN')}`, pageWidth/2, y, {align:'center'}); y+=8;
-  // Metrics (recompute in place)
-  const {present:pc, counts} = getChannelCounts(); const totalCount = pc.reduce((t,ch)=> t+(counts[ch]||0), 0); const digitalSet = SETTINGS.digitalChannels.filter(ch=> pc.includes(ch)); const digitalCount = digitalSet.reduce((t,ch)=> t+(counts[ch]||0), 0); const cashCount = pc.includes('cash') ? (counts['cash']||0) : 0; const convCount = cashCount+digitalCount>0 ? ((digitalCount/(cashCount+digitalCount))*100).toFixed(2) : '0.00'; const {present:pa, amts} = getChannelAmounts(); const totalAmt = pa.reduce((t,ch)=> t+(amts[ch]||0), 0); const digitalAmt = SETTINGS.digitalChannels.filter(ch=> pa.includes(ch)).reduce((t,ch)=> t+(amts[ch]||0), 0); const cashAmt = pa.includes('cash') ? (amts['cash']||0) : 0; const convAmt = cashAmt+digitalAmt>0 ? ((digitalAmt/(cashAmt+digitalAmt))*100).toFixed(2) : '0.00';
-  doc.setFontSize(11); doc.text('Key Performance Indicators', 14, y); y+=4; doc.setFontSize(9);
-  doc.text(`Total Transactions (count): ${totalCount.toLocaleString()}`, 14, y); y+=5; doc.text(`Digital Transactions (count): ${digitalCount.toLocaleString()}`, 14, y); y+=5; doc.text(`Conversion (Cash → Digital) by count: ${convCount}%`, 14, y); y+=6;
-  doc.text(`Total Transactions (amount): ${fmtINR.format(totalAmt)}`, 14, y); y+=5; doc.text(`Digital Transactions (amount): ${fmtINR.format(digitalAmt)}`, 14, y); y+=5; doc.text(`Conversion (Cash → Digital) by amount: ${convAmt}%`, 14, y); y+=8;
-  // Channel summary table
-  const allChannels = Array.from(new Set([...pc,...pa])); const head = [['Channel','Count','Amount (₹)','Type']]; const body = allChannels.map(ch=>{ const type = SETTINGS.digitalChannels.includes(ch)?'Digital':'Other'; return [ch, (counts[ch]||0).toLocaleString(), fmtINR.format(amts[ch]||0), type]; });
-  doc.autoTable({startY:y, head:head, body:body, styles:{fontSize:8}, headStyles:{fillColor:[239,68,68]}});
-  doc.save('overview-review.pdf'); }
+function exportPDF(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cols = SETTINGS.columns.slice(0,10); const rows = STATE.filteredData.map(r=>cols.map(c=>r[c]||'')); doc.text('Digital Transactions Report', 14, 16); doc.autoTable({startY:22, head:[cols], body:rows}); doc.save('report.pdf'); }
 function downloadTemplate(){ const cols = SETTINGS.columns.length?SETTINGS.columns:['office-name','office-id','cash','cheque','credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','product-name']; const csv = Papa.unparse({fields:cols, data: []}); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); saveAs(blob,'dt_template.csv'); }
-function importSettings(){ const txt = prompt('Paste settings JSON'); if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderAll(); renderDigitalChannelSettings(); }catch(e){ alert('Invalid JSON') } }
+function importSettings(){ const txt = prompt('Paste settings JSON'); if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderAll(); }catch(e){ alert('Invalid JSON') } }
 
 // ===== File & Controls Events =====
 function bindEvents(){
-  on('btn-login','click', login);
-  on('btn-logout','click', logout);
-  on('btn-reset-data','click', async ()=>{ if(!confirm('Reset to defaults?')) return; localStorage.clear(); await initDefaults(); location.reload(); });
+  document.getElementById('btn-login').addEventListener('click', login);
+  document.getElementById('btn-logout').addEventListener('click', logout);
+  document.getElementById('btn-reset-data').addEventListener('click', async ()=>{ if(!confirm('Reset to defaults?')) return; localStorage.clear(); await initDefaults(); location.reload(); });
   document.querySelectorAll('.tab-btn').forEach(btn=> btn.addEventListener('click', ()=> showTab(btn.dataset.tab)));
   // Global metric
   document.querySelectorAll('input[name="globalMetric"]').forEach(r=> r.addEventListener('change', (e)=>{ STATE.globalMetric=e.target.value; renderAll(); }));
-  on('chk-dual-kpi','change', (e)=>{ STATE.dualKPI=e.target.checked; renderAll(); });
-  on('sel-tile-metric','change', ()=> renderOverviewSummary());
+  document.getElementById('chk-dual-kpi').addEventListener('change', (e)=>{ STATE.dualKPI=e.target.checked; renderAll(); });
+  document.getElementById('sel-tile-metric').addEventListener('change', ()=> renderOverviewSummary());
   // Per-chart controls
-  on('sel-chart-type','change', ()=>{ const sel=$('sel-chart-type'); chartType = sel? sel.value : chartType; renderCharts(); });
-  on('sel-chart-type-2','change', ()=> renderCharts2());
-  on('sel-chart-metric-main','change', ()=> renderCharts());
-  on('sel-chart-metric-2','change', ()=> renderCharts2());
-  on('sel-office-metric','change', ()=> renderCharts2());
-  on('sel-office-stack-metric','change', ()=> renderCharts2());
+  const selType = document.getElementById('sel-chart-type'); if(selType){ selType.addEventListener('change', ()=>{ chartType = selType.value; renderCharts(); }); }
+  const selType2 = document.getElementById('sel-chart-type-2'); if(selType2){ selType2.addEventListener('change', ()=> renderCharts2()); }
+  const selMetMain = document.getElementById('sel-chart-metric-main'); if(selMetMain){ selMetMain.addEventListener('change', ()=> renderCharts()); }
+  const selMet2 = document.getElementById('sel-chart-metric-2'); if(selMet2){ selMet2.addEventListener('change', ()=> renderCharts2()); }
+  const selOff = document.getElementById('sel-office-metric'); if(selOff){ selOff.addEventListener('change', ()=> renderCharts2()); }
+  const selOffS = document.getElementById('sel-office-stack-metric'); if(selOffS){ selOffS.addEventListener('change', ()=> renderCharts2()); }
   // Data controls
-  on('template-upload','change', function(e){ const f=e.target.files[0]; if(!f) return; Papa.parse(f,{header:true,skipEmptyLines:true,complete:function(res){ SETTINGS.columns=Object.keys(res.data[0]||{}); saveSettings(); renderAll(); alert('Template loaded.'); }}); });
-  on('csv-upload','change', e=>{ handleCSVFile(e.target.files[0]); });
-  on('filter-office','change', applyFilters);
-  on('search-text','input', applyFilters);
-  on('btn-export-csv','click', exportCSV);
-  on('btn-export-pdf','click', exportPDF);
-  on('btn-export-overview','click', exportOverviewPDF);
-  on('btn-download-template','click', downloadTemplate);
-  on('export-settings','click', ()=>{ const blob=new Blob([JSON.stringify(SETTINGS,null,2)],{type:'application/json'}); saveAs(blob,'dt_settings.json'); });
-  on('import-settings','click', importSettings);
+  const tUp=document.getElementById('template-upload'); if(tUp) tUp.addEventListener('change', function(e){ const f=e.target.files[0]; if(!f) return; Papa.parse(f,{header:true,skipEmptyLines:true,complete:function(res){ SETTINGS.columns=Object.keys(res.data[0]||{}); saveSettings(); renderAll(); alert('Template loaded.'); }}); });
+  const csvUp=document.getElementById('csv-upload'); if(csvUp) csvUp.addEventListener('change', e=> handleCSVFile(e.target.files[0]));
+  const fo=document.getElementById('filter-office'); if(fo) fo.addEventListener('change', applyFilters);
+  const st=document.getElementById('search-text'); if(st) st.addEventListener('input', applyFilters);
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+  document.getElementById('btn-export-pdf').addEventListener('click', exportPDF);
+  document.getElementById('btn-download-template').addEventListener('click', downloadTemplate);
+  document.getElementById('export-settings').addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(SETTINGS,null,2)],{type:'application/json'}); saveAs(blob,'dt_settings.json'); });
+  document.getElementById('import-settings').addEventListener('click', importSettings);
   // User list actions
-  on('btn-add-user','click', addOrUpdateUser);
-  const ul=$('user-list'); if(ul){ ul.addEventListener('click', async function(e){ if(e.target.classList.contains('btn-del')){ const u=e.target.dataset.user; deleteUser(u);} if(e.target.classList.contains('btn-edit')){ const u=e.target.dataset.user; const users=JSON.parse(localStorage.getItem('dt_users')); $('new-username').value=u; $('new-password').value=''; $('new-role').value=users[u].role; }}); }
+  document.getElementById('btn-add-user').addEventListener('click', addOrUpdateUser);
+  document.getElementById('user-list').addEventListener('click', async function(e){ if(e.target.classList.contains('btn-del')){ const u=e.target.dataset.user; deleteUser(u);} if(e.target.classList.contains('btn-edit')){ const u=e.target.dataset.user; const users=JSON.parse(localStorage.getItem('dt_users')); document.getElementById('new-username').value=u; document.getElementById('new-password').value=''; document.getElementById('new-role').value=users[u].role; }});
 }
 
 // ===== CSV & Admin =====
-function handleCSVFile(file){ if(!file) return; Papa.parse(file,{header:true,skipEmptyLines:true,complete:function(results){ STATE.rawData=results.data; SETTINGS.columns=Object.keys(STATE.rawData[0]||{}); saveSettings(); prepareFilters(); applyFilters(); alert('File imported successfully.'); }}); }
-async function addOrUpdateUser(){ const u=$('new-username')? $('new-username').value.trim() : ''; const p=$('new-password')? $('new-password').value : ''; const r=$('new-role')? $('new-role').value : 'user'; if(!u||!p){ alert('username & password required'); return } const users=JSON.parse(localStorage.getItem('dt_users')); users[u]={passwordHash: await sha256(p), role:r}; localStorage.setItem('dt_users', JSON.stringify(users)); renderUserList(); if($('new-username')) $('new-username').value=''; if($('new-password')) $('new-password').value=''; }
+function handleCSVFile(file){ if(!file) return; Papa.parse(file,{header:true,skipEmptyLines:true,complete:function(results){ STATE.rawData=results.data; SETTINGS.columns=Object.keys(STATE.rawData[0]||{}); saveSettings(); prepareFilters(); applyFilters(); }}); }
+async function addOrUpdateUser(){ const u=document.getElementById('new-username').value.trim(); const p=document.getElementById('new-password').value; const r=document.getElementById('new-role').value; if(!u||!p){ alert('username & password required'); return } const users=JSON.parse(localStorage.getItem('dt_users')); users[u]={passwordHash: await sha256(p), role:r}; localStorage.setItem('dt_users', JSON.stringify(users)); renderUserList(); document.getElementById('new-username').value=''; document.getElementById('new-password').value=''; }
 function deleteUser(username){ if(!confirm('Delete user '+username+'?')) return; const users=JSON.parse(localStorage.getItem('dt_users')); delete users[username]; localStorage.setItem('dt_users', JSON.stringify(users)); renderUserList(); }
-function renderUserList(){ const ul=$('user-list'); if(!ul) return; ul.innerHTML=''; const users=JSON.parse(localStorage.getItem('dt_users')); for(const k of Object.keys(users)){ const li=document.createElement('li'); li.className='flex justify-between'; li.innerHTML = `<span>${k} (${users[k].role})</span><span><button data-user='${k}' class='btn-edit text-xs mr-1'>Edit</button><button data-user='${k}' class='btn-del text-xs text-red-600'>Delete</button></span>`; ul.appendChild(li); } }
+function renderUserList(){ const ul=document.getElementById('user-list'); if(!ul) return; ul.innerHTML=''; const users=JSON.parse(localStorage.getItem('dt_users')); for(const k of Object.keys(users)){ const li=document.createElement('li'); li.className='flex justify-between'; li.innerHTML = `<span>${k} (${users[k].role})</span><span><button data-user='${k}' class='btn-edit text-xs mr-1'>Edit</button><button data-user='${k}' class='btn-del text-xs text-red-600'>Delete</button></span>`; ul.appendChild(li); } }
 
-// ===== Tiny Self‑tests =====
-function runSelfTests(){
-  try{
-    on('nonexistent-id','click', ()=>{}); // should not throw
-    const bak = {data: STATE.filteredData, cols: SETTINGS.columns};
-    STATE.filteredData = [{cash:'1', upi:'2'},{cash:'3', upi:'5'}];
-    SETTINGS.columns = ['cash','upi'];
-    const {present, counts} = getChannelCounts();
-    if(!(Array.isArray(present)&&counts&&typeof counts==='object')) throw new Error('Bad structure');
-    if(present.includes('cash') && counts.cash!==4) throw new Error('Count mismatch for cash');
-    if(present.includes('upi') && counts.upi!==7) throw new Error('Count mismatch for upi');
-    STATE.filter
+// ===== Boot =====
+(async()=>{ await initDefaults(); loadSession(); if(STATE.user) location.hash = '#/dashboard'; else location.hash = '#/login'; bindEvents(); renderUserList(); navigate(); })();
+</script>
+</body>
+</html>
