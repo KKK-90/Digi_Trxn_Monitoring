@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Digital Transactions Monitoring - Single File Dashboard</title>
-  <!-- Tailwind via CDN for quick styling -->
+  <title>NKR‑KA Digital Transactions – Dashboard</title>
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -16,44 +16,149 @@
     body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
     .glass{background: rgba(255,255,255,0.6); backdrop-filter: blur(6px);} 
     .kpibox{border-radius:12px;padding:14px}
-    /* color coding examples */
     .good{background:#e6ffed}
     .warning{background:#fff7e6}
     .bad{background:#ffe6e6}
     .hidden{display:none}
     .table-scroll{max-height:360px; overflow:auto}
+    .tab-btn[aria-selected="true"]{border-bottom:3px solid #ef4444; font-weight:600}
   </style>
 </head>
-<body class="p-6 bg-gradient-to-br from-slate-50 to-slate-100">
-  <div class="max-w-7xl mx-auto">
-    <header class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-semibold">Digital Transactions Monitoring</h1>
-      <div id="current-user" class="text-sm">Not logged in</div>
-    </header>
-
-    <!-- Login / User management -->
-    <section id="auth-section" class="glass p-4 rounded-md mb-6">
-      <div id="login-box">
-        <div class="flex gap-2 items-center mb-3">
-          <label class="w-28">Username</label>
-          <input id="login-username" class="border p-2 rounded w-64" placeholder="e.g. superadmin" />
-        </div>
-        <div class="flex gap-2 items-center mb-3">
-          <label class="w-28">Password</label>
-          <input id="login-password" type="password" class="border p-2 rounded w-64" placeholder="password" />
-        </div>
-        <div class="flex gap-2">
-          <button id="btn-login" class="px-4 py-2 rounded bg-red-600 text-white">Login</button>
-          <button id="btn-logout" class="px-4 py-2 rounded bg-gray-200 hidden">Logout</button>
-          <button id="btn-reset-data" class="px-4 py-2 rounded bg-yellow-100 text-sm" title="Reset credentials & templates to defaults">Reset Defaults</button>
-        </div>
-        <div id="auth-message" class="mt-2 text-sm text-red-600"></div>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+  <!-- Global Header (shown on all pages except login) -->
+  <header id="app-header" class="hidden bg-white/70 glass sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">NKR‑KA Digital Transactions</h1>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="current-user">—</span>
+        <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-red-600 text-white">Logout</button>
       </div>
+    </div>
+  </header>
 
-      <!-- Superadmin panel to manage users & templates -->
-      <div id="superadmin-panel" class="mt-6 hidden">
-        <h3 class="font-semibold">Superadmin Controls</h3>
-        <div class="grid grid-cols-2 gap-4 mt-3">
+  <!-- Page: Login -->
+  <main id="page-login" class="min-h-[80vh] flex items-center justify-center p-6">
+    <div class="w-full max-w-md glass p-6 rounded-2xl shadow">
+      <h2 class="text-xl font-semibold mb-4">Sign in</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm mb-1">Username</label>
+          <input id="login-username" class="border p-2 rounded w-full" placeholder="e.g. superadmin" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Password</label>
+          <input id="login-password" type="password" class="border p-2 rounded w-full" placeholder="password" />
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button id="btn-login" class="px-4 py-2 rounded bg-red-600 text-white">Login</button>
+          <button id="btn-reset-data" class="px-4 py-2 rounded bg-yellow-100 text-sm">Reset Defaults</button>
+        </div>
+        <div id="auth-message" class="text-xs text-gray-600"></div>
+        <div class="text-xs text-gray-500 mt-2">Default passwords → superadmin <code>Super@2025</code>, admin <code>Admin@2025</code>, karna <code>Karna@2025</code>, nkro <code>Nkro@2025</code>, skro <code>Skro@2025</code>, bgro <code>Bgro@2025</code>.</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Page: Dashboard (only after login) -->
+  <main id="page-dashboard" class="hidden p-6">
+    <div class="max-w-7xl mx-auto">
+      <!-- Tab Bar -->
+      <nav class="border-b mb-4">
+        <ul class="flex gap-6" role="tablist">
+          <li><button class="tab-btn py-2" data-tab="overview" aria-selected="true">Overview</button></li>
+          <li><button class="tab-btn py-2" data-tab="channels">Channels</button></li>
+          <li><button class="tab-btn py-2" data-tab="offices">Offices</button></li>
+          <li><button class="tab-btn py-2" data-tab="data">Data</button></li>
+          <li><button class="tab-btn py-2" data-tab="reports">Reports</button></li>
+          <li id="tab-admin-li" class="hidden"><button class="tab-btn py-2" data-tab="admin">Admin</button></li>
+        </ul>
+      </nav>
+
+      <!-- Tab: Overview -->
+      <section data-tabpanel="overview">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="kpibox glass p-4 good">
+            <div class="text-sm">Total Transactions</div>
+            <div id="kpi-total" class="text-2xl font-bold">0</div>
+          </div>
+          <div class="kpibox glass p-4 warning">
+            <div class="text-sm">Digital Transactions</div>
+            <div id="kpi-digital" class="text-2xl font-bold">0</div>
+          </div>
+          <div class="kpibox glass p-4 bad">
+            <div class="text-sm">Conversion (Cash → Digital)</div>
+            <div id="kpi-conversion" class="text-2xl font-bold">0%</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-3 glass rounded">
+            <h3 class="font-semibold mb-2">Payments by Channel</h3>
+            <canvas id="chart-channels" height="240"></canvas>
+          </div>
+          <div class="p-3 glass rounded">
+            <h3 class="font-semibold mb-2">Top Offices by Digital %</h3>
+            <canvas id="chart-top-offices" height="240"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Channels -->
+      <section data-tabpanel="channels" class="hidden">
+        <div class="p-3 glass rounded mb-4">
+          <h3 class="font-semibold mb-2">Channel Mix</h3>
+          <canvas id="chart-channels-2" height="260"></canvas>
+        </div>
+      </section>
+
+      <!-- Tab: Offices -->
+      <section data-tabpanel="offices" class="hidden">
+        <div class="p-3 glass rounded mb-3">
+          <h3 class="font-semibold mb-2">Top 20 Offices by Digital Amount</h3>
+          <canvas id="chart-top-offices-2" height="260"></canvas>
+        </div>
+      </section>
+
+      <!-- Tab: Data -->
+      <section data-tabpanel="data" class="hidden">
+        <div class="glass p-4 rounded-md mb-4">
+          <div class="flex items-center gap-4 flex-wrap">
+            <div>
+              <label class="block text-sm">Upload daily CSV (template)</label>
+              <input id="csv-upload" type="file" accept=".csv" />
+            </div>
+            <div>
+              <label class="block text-sm">Filter Office</label>
+              <select id="filter-office" class="border p-1 rounded"></select>
+            </div>
+            <div>
+              <label class="block text-sm">Search</label>
+              <input id="search-text" placeholder="search office or product" class="border p-1 rounded" />
+            </div>
+          </div>
+        </div>
+        <div class="p-3 glass rounded">
+          <h3 class="font-semibold mb-2">Data Table</h3>
+          <div class="table-scroll border rounded">
+            <table id="data-table" class="min-w-full text-sm">
+              <thead class="bg-gray-100 sticky top-0"><tr id="table-headers"></tr></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Reports -->
+      <section data-tabpanel="reports" class="hidden">
+        <div class="glass p-4 rounded-md mb-4 flex items-center gap-3 flex-wrap">
+          <button id="btn-export-csv" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export CSV</button>
+          <button id="btn-export-pdf" class="px-3 py-1 rounded bg-gray-700 text-white text-sm">Export PDF</button>
+          <button id="btn-download-template" class="px-3 py-1 rounded bg-gray-200 text-sm">Download Template CSV</button>
+        </div>
+      </section>
+
+      <!-- Tab: Admin (Superadmin only) -->
+      <section data-tabpanel="admin" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="p-3 glass rounded">
             <strong>Manage Users</strong>
             <div class="mt-2 text-sm">Add / Edit user credentials and roles.</div>
@@ -87,84 +192,21 @@
               <input id="template-upload" type="file" accept=".csv" class="mt-1" />
               <div class="mt-2 text-xs text-gray-600">Uploading a template will set the expected columns automatically.</div>
             </div>
-            <div class="mt-3">
+            <div class="mt-3 flex gap-2">
               <button id="export-settings" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export Settings JSON</button>
               <button id="import-settings" class="px-3 py-1 rounded bg-gray-200 text-sm" title="Import JSON settings">Import Settings (paste JSON)</button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Data upload & controls -->
-    <section id="data-section" class="glass p-4 rounded-md mb-6 hidden">
-      <div class="flex items-center gap-4">
-        <div>
-          <label class="block text-sm">Upload daily CSV (template)</label>
-          <input id="csv-upload" type="file" accept=".csv" />
-        </div>
-        <div>
-          <label class="block text-sm">Filter Office</label>
-          <select id="filter-office" class="border p-1 rounded"></select>
-        </div>
-        <div>
-          <label class="block text-sm">Search</label>
-          <input id="search-text" placeholder="search office or product" class="border p-1 rounded" />
-        </div>
-        <div class="ml-auto flex gap-2">
-          <button id="btn-export-csv" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export CSV</button>
-          <button id="btn-export-pdf" class="px-3 py-1 rounded bg-gray-700 text-white text-sm">Export PDF</button>
-          <button id="btn-download-template" class="px-3 py-1 rounded bg-gray-200 text-sm">Download Template CSV</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Dashboard -->
-    <section id="dashboard" class="hidden">
-      <div class="grid grid-cols-3 gap-4 mb-4">
-        <div class="kpibox glass p-4 good">
-          <div class="text-sm">Total Transactions</div>
-          <div id="kpi-total" class="text-2xl font-bold">0</div>
-        </div>
-        <div class="kpibox glass p-4 warning">
-          <div class="text-sm">Digital Transactions</div>
-          <div id="kpi-digital" class="text-2xl font-bold">0</div>
-        </div>
-        <div class="kpibox glass p-4 bad">
-          <div class="text-sm">Conversion (Cash → Digital)</div>
-          <div id="kpi-conversion" class="text-2xl font-bold">0%</div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="p-3 glass rounded">
-          <h3 class="font-semibold mb-2">Payments by Channel</h3>
-          <canvas id="chart-channels" height="220"></canvas>
-        </div>
-        <div class="p-3 glass rounded">
-          <h3 class="font-semibold mb-2">Top Offices by Digital %</h3>
-          <canvas id="chart-top-offices" height="220"></canvas>
-        </div>
-      </div>
-
-      <div class="mt-4 p-3 glass rounded">
-        <h3 class="font-semibold mb-2">Data Table</h3>
-        <div class="table-scroll border rounded">
-          <table id="data-table" class="min-w-full text-sm">
-            <thead class="bg-gray-100 sticky top-0">
-              <tr id="table-headers"></tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <footer class=\"mt-6 text-xs text-gray-600\">© NKR-KA Digital Transactions Monitoring</footer>
-  </div>
+      <footer class="mt-6 text-xs text-gray-600">© NKR‑KA Digital Transactions Monitoring</footer>
+    </div>
+  </main>
 
 <script>
-// Single-file dashboard JS
+// ===== App State & Config =====
+const APP_VERSION = '2025-11-13-multipage-tabs-v1';
 const DEFAULT_PASSWORDS = {
   superadmin: 'Super@2025',
   admin: 'Admin@2025',
@@ -184,161 +226,100 @@ const DEFAULT_USERS = {
 let SETTINGS = {digitalChannels: ['credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','posb','ippb'], columns: []};
 let STATE = {user: null, rawData: [], filteredData: []};
 
-// Helpers: SHA-256 hashing (returns hex)
+// ===== Helpers =====
 async function sha256(msg){
   const enc = new TextEncoder();
   const data = enc.encode(msg);
   const hash = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+function saveSettings(){ localStorage.setItem('dt_settings', JSON.stringify(SETTINGS)); }
+function loadSettings(){ SETTINGS = JSON.parse(localStorage.getItem('dt_settings')) || SETTINGS; }
+function saveSession(){ localStorage.setItem('dt_session', JSON.stringify(STATE.user)); }
+function loadSession(){ try{ STATE.user = JSON.parse(localStorage.getItem('dt_session')); }catch(e){ STATE.user=null; } }
+function showMsg(msg,id='auth-message'){ const el=document.getElementById(id); if(el) el.innerText=msg; }
 
-// Initialize defaults
+// ===== Init Defaults =====
 async function initDefaults(){
-  if(!localStorage.getItem('dt_users')){
+  const storedVersion = localStorage.getItem('dt_version');
+  const needFreshUsers = !localStorage.getItem('dt_users') || storedVersion !== APP_VERSION;
+  if(needFreshUsers){
     const users = JSON.parse(JSON.stringify(DEFAULT_USERS));
-    for(const u in users){
-      const pw = DEFAULT_PASSWORDS[u] || 'Password@123';
-      users[u].passwordHash = await sha256(pw);
-    }
+    for(const u in users){ users[u].passwordHash = await sha256(DEFAULT_PASSWORDS[u] || 'Password@123'); }
     localStorage.setItem('dt_users', JSON.stringify(users));
+    localStorage.setItem('dt_version', APP_VERSION);
   }
   if(!localStorage.getItem('dt_settings')){
     localStorage.setItem('dt_settings', JSON.stringify(SETTINGS));
+  } else { loadSettings(); }
+}
+
+// ===== Router (hash-based) =====
+function requireAuth(){ if(!STATE.user){ location.hash = '#/login'; return false;} return true; }
+function navigate(){
+  const route = location.hash || '#/login';
+  const header = document.getElementById('app-header');
+  const loginPage = document.getElementById('page-login');
+  const dashPage = document.getElementById('page-dashboard');
+  if(route.startsWith('#/dashboard')){
+    if(!requireAuth()) return;
+    header.classList.remove('hidden');
+    loginPage.classList.add('hidden');
+    dashPage.classList.remove('hidden');
+    document.getElementById('current-user').innerText = `${STATE.user.username} (${STATE.user.role})`;
+    // Superadmin tab visibility
+    document.getElementById('tab-admin-li').classList.toggle('hidden', STATE.user.role!=='superadmin');
+    // Default tab
+    if(!route.includes('?tab=')) showTab('overview');
   } else {
-    SETTINGS = JSON.parse(localStorage.getItem('dt_settings'));
+    header.classList.add('hidden');
+    dashPage.classList.add('hidden');
+    loginPage.classList.remove('hidden');
   }
 }
+window.addEventListener('hashchange', navigate);
 
-function show(msg,el='auth-message'){document.getElementById(el).innerText=msg}
-
-// Render user list
-function renderUserList(){
-  const ul = document.getElementById('user-list'); ul.innerHTML='';
-  const users = JSON.parse(localStorage.getItem('dt_users'));
-  for(const k of Object.keys(users)){
-    const li = document.createElement('li');
-    li.className='flex justify-between';
-    li.innerHTML = `<span>${k} (${users[k].role})</span><span><button data-user='${k}' class='btn-edit text-xs mr-1'>Edit</button><button data-user='${k}' class='btn-del text-xs text-red-600'>Delete</button></span>`;
-    ul.appendChild(li);
-  }
-}
-
-// Render digital channels checkboxes
-function renderDigitalChannels(columns){
-  const wrap = document.getElementById('digital-channels'); wrap.innerHTML='';
-  const cols = columns && columns.length? columns: SETTINGS.columns;
-  const chs = cols.filter(c=>typeof c==='string');
-  if(!chs.length){ wrap.innerHTML='<div class="text-xs text-gray-500">No columns yet. Upload template or CSV.</div>';return}
-  for(const c of chs){
-    const id = 'ch_'+c.replace(/[^a-z0-9]/gi,'_');
-    const checked = SETTINGS.digitalChannels.includes(c)?'checked':'';
-    const div = document.createElement('div'); div.className='flex items-center gap-2';
-    div.innerHTML = `<input type='checkbox' id='${id}' data-col='${c}' ${checked} /> <label for='${id}'>${c}</label>`;
-    wrap.appendChild(div);
-  }
-}
-
-// Load settings
-function loadSettings(){
-  SETTINGS = JSON.parse(localStorage.getItem('dt_settings')) || SETTINGS;
-}
-
-// Save settings
-function saveSettings(){
-  localStorage.setItem('dt_settings', JSON.stringify(SETTINGS));
-}
-
-// Login
+// ===== Auth =====
 async function login(){
   const user = document.getElementById('login-username').value.trim();
   const pwd = document.getElementById('login-password').value;
-  if(!user||!pwd){ show('Enter username & password'); return }
+  if(!user||!pwd){ showMsg('Enter username & password'); return }
   const users = JSON.parse(localStorage.getItem('dt_users'));
-  if(!users[user]){ show('User not found'); return }
+  if(!users[user]){ showMsg('User not found'); return }
   const hash = await sha256(pwd);
-  if(hash!==users[user].passwordHash){ show('Invalid password'); return }
+  if(hash!==users[user].passwordHash){ showMsg('Invalid password'); return }
   STATE.user = {username: user, role: users[user].role};
-  onLogin();
+  saveSession();
+  location.hash = '#/dashboard';
+}
+function logout(){ STATE.user=null; localStorage.removeItem('dt_session'); location.hash = '#/login'; }
+
+// ===== Tabs =====
+function showTab(name){
+  document.querySelectorAll('[data-tabpanel]').forEach(sec=>{ sec.classList.toggle('hidden', sec.getAttribute('data-tabpanel')!==name); });
+  document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.setAttribute('aria-selected', String(btn.dataset.tab===name)); });
+  // re-render charts when switching
+  if(name==='overview'||name==='channels'||name==='offices'){ renderKPIs(); renderCharts(); renderCharts2(); }
 }
 
-function logout(){ STATE.user=null; onLogout(); }
-
-function onLogin(){
-  document.getElementById('current-user').innerText = `${STATE.user.username} (${STATE.user.role})`;
-  document.getElementById('btn-logout').classList.remove('hidden');
-  document.getElementById('btn-login').classList.add('hidden');
-  document.getElementById('login-username').classList.add('hidden');
-  document.getElementById('login-password').classList.add('hidden');
-  document.getElementById('data-section').classList.remove('hidden');
-  document.getElementById('dashboard').classList.remove('hidden');
-  if(STATE.user.role==='superadmin') document.getElementById('superadmin-panel').classList.remove('hidden');
-  renderUserList();
-  renderDigitalChannels(SETTINGS.columns);
-  show('','auth-message');
-}
-function onLogout(){
-  document.getElementById('current-user').innerText = 'Not logged in';
-  document.getElementById('btn-logout').classList.add('hidden');
-  document.getElementById('btn-login').classList.remove('hidden');
-  document.getElementById('login-username').classList.remove('hidden');
-  document.getElementById('login-password').classList.remove('hidden');
-  document.getElementById('superadmin-panel').classList.add('hidden');
-  document.getElementById('data-section').classList.add('hidden');
-  document.getElementById('dashboard').classList.add('hidden');
-}
-
-// Add/update user (superadmin)
-async function addOrUpdateUser(){
-  const u = document.getElementById('new-username').value.trim();
-  const p = document.getElementById('new-password').value;
-  const r = document.getElementById('new-role').value;
-  if(!u||!p){ alert('username & password required'); return }
-  const users = JSON.parse(localStorage.getItem('dt_users'));
-  users[u] = {passwordHash: await sha256(p), role: r};
-  localStorage.setItem('dt_users', JSON.stringify(users));
-  renderUserList();
-  document.getElementById('new-username').value=''; document.getElementById('new-password').value='';
-}
-
-// Delete user
-function deleteUser(username){
-  if(!confirm('Delete user '+username+'?')) return;
-  const users = JSON.parse(localStorage.getItem('dt_users'));
-  delete users[username];
-  localStorage.setItem('dt_users', JSON.stringify(users));
-  renderUserList();
-}
-
-// CSV parsing and render
-function handleCSVFile(file){
-  if(!file) return;
-  Papa.parse(file,{header:true,skipEmptyLines:true,complete:function(results){
-    const data = results.data;
-    STATE.rawData = data;
-    SETTINGS.columns = Object.keys(data[0]||{});
-    saveSettings(); renderDigitalChannels(SETTINGS.columns); prepareFilters(); applyFilters();
-  }});
-}
-
+// ===== Data & UI =====
 function prepareFilters(){
-  const select = document.getElementById('filter-office'); select.innerHTML='';
+  const select = document.getElementById('filter-office'); if(!select) return; select.innerHTML='';
   const offices = Array.from(new Set(STATE.rawData.map(r=>r['office-name']||r['office']||'Unknown'))).sort();
   const opt = document.createElement('option'); opt.value=''; opt.innerText='All Offices'; select.appendChild(opt);
   for(const o of offices){ const oel = document.createElement('option'); oel.value=o; oel.innerText=o; select.appendChild(oel); }
 }
-
 function applyFilters(){
   let d = STATE.rawData.slice();
-  const f = document.getElementById('filter-office').value;
-  const s = document.getElementById('search-text').value.trim().toLowerCase();
+  const f = (document.getElementById('filter-office')||{}).value || '';
+  const s = ((document.getElementById('search-text')||{}).value||'').trim().toLowerCase();
   if(f) d = d.filter(r=> (r['office-name']||r['office']||'').toString()===f);
   if(s) d = d.filter(r=> Object.values(r).join(' ').toLowerCase().includes(s));
-  STATE.filteredData = d; renderTable(); renderKPIs(); renderCharts();
+  STATE.filteredData = d; renderTable(); renderKPIs(); renderCharts(); renderCharts2();
 }
-
 function renderTable(){
-  const th = document.getElementById('table-headers'); th.innerHTML='';
-  const tbody = document.getElementById('table-body'); tbody.innerHTML='';
+  const th = document.getElementById('table-headers'); const tbody = document.getElementById('table-body');
+  if(!th||!tbody) return; th.innerHTML=''; tbody.innerHTML='';
   const cols = SETTINGS.columns;
   for(const c of cols){ const thc = document.createElement('th'); thc.className='p-2 text-left'; thc.innerText=c; th.appendChild(thc); }
   for(const row of STATE.filteredData){
@@ -347,32 +328,27 @@ function renderTable(){
     tbody.appendChild(tr);
   }
 }
-
 function sumNumeric(row, cols){
   return cols.reduce((s,c)=>{ const v = parseFloat((row[c]||'').toString().replace(/[^0-9.-]/g,'')); return s + (isNaN(v)?0:v)},0);
 }
-
 function renderKPIs(){
   const total = STATE.filteredData.reduce((acc,r)=> acc + sumNumeric(r, SETTINGS.columns),0);
-  // For transactions count we'll sum numeric in key channels
   const digitalChannels = SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c));
   const digital = STATE.filteredData.reduce((acc,r)=> acc + sumNumeric(r, digitalChannels),0);
   const cash = STATE.filteredData.reduce((acc,r)=> acc + sumNumeric(r, ['cash'].filter(c=>SETTINGS.columns.includes(c))),0);
   const conversion = cash>0? ((digital/(cash+digital))*100).toFixed(2) : '0.00';
-  document.getElementById('kpi-total').innerText = (total).toLocaleString();
-  document.getElementById('kpi-digital').innerText = (digital).toLocaleString();
-  document.getElementById('kpi-conversion').innerText = conversion + '%';
+  const elT = document.getElementById('kpi-total'); if(elT) elT.innerText = (total).toLocaleString();
+  const elD = document.getElementById('kpi-digital'); if(elD) elD.innerText = (digital).toLocaleString();
+  const elC = document.getElementById('kpi-conversion'); if(elC) elC.innerText = conversion + '%';
 }
-
-let chartChannels=null, chartTop=null;
+let chartChannels=null, chartTop=null, chartChannels2=null, chartTop2=null;
 function renderCharts(){
+  const canvas = document.getElementById('chart-channels'); if(!canvas) return;
   const channels = SETTINGS.digitalChannels.concat(['cash','cheque']).filter((v,i,a)=>a.indexOf(v)===i && SETTINGS.columns.includes(v));
   const sums = channels.map(ch=> STATE.filteredData.reduce((s,r)=> s + sumNumeric(r,[ch]),0));
-  const ctx = document.getElementById('chart-channels').getContext('2d');
-  if(chartChannels) chartChannels.destroy();
+  const ctx = canvas.getContext('2d'); if(chartChannels) chartChannels.destroy();
   chartChannels = new Chart(ctx,{type:'bar',data:{labels:channels, datasets:[{label:'Amount', data:sums}]}, options:{responsive:true}});
-
-  // Top offices by digital %
+  const ctx2 = document.getElementById('chart-top-offices').getContext('2d');
   const officeMap = {};
   for(const r of STATE.filteredData){
     const o = r['office-name']||r['office']||'Unknown';
@@ -380,84 +356,66 @@ function renderCharts(){
     officeMap[o].cash += sumNumeric(r,['cash'].filter(c=>SETTINGS.columns.includes('cash')));
     officeMap[o].digital += sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c)));
   }
-  const officeArr = Object.keys(officeMap).map(o=>({office:o, digitalPct: officeMap[o].cash+officeMap[o].digital>0? (officeMap[o].digital/(officeMap[o].cash+officeMap[o].digital))*100:0, digitalAmt:officeMap[o].digital}));
-  officeArr.sort((a,b)=>b.digitalPct - a.digitalPct);
-  const top = officeArr.slice(0,10);
-  const ctx2 = document.getElementById('chart-top-offices').getContext('2d');
+  const officeArr = Object.keys(officeMap).map(o=>({office:o, digitalPct: officeMap[o].cash+officeMap[o].digital>0? (officeMap[o].digital/(officeMap[o].cash+officeMap[o].digital))*100:0, digitalAmt:officeMap[o].digital})).sort((a,b)=>b.digitalPct - a.digitalPct).slice(0,10);
   if(chartTop) chartTop.destroy();
-  chartTop = new Chart(ctx2,{type:'bar',data:{labels:top.map(t=>t.office), datasets:[{label:'Digital %', data:top.map(t=>t.digitalPct)}]}, options:{indexAxis:'y',responsive:true}});
+  chartTop = new Chart(ctx2,{type:'bar',data:{labels:officeArr.map(t=>t.office), datasets:[{label:'Digital %', data:officeArr.map(t=>t.digitalPct)}]}, options:{indexAxis:'y',responsive:true}});
+}
+function renderCharts2(){
+  const can1 = document.getElementById('chart-channels-2');
+  if(can1){ const channels = SETTINGS.digitalChannels.concat(['cash','cheque']).filter((v,i,a)=>a.indexOf(v)===i && SETTINGS.columns.includes(v));
+    const sums = channels.map(ch=> STATE.filteredData.reduce((s,r)=> s + sumNumeric(r,[ch]),0));
+    const ctx = can1.getContext('2d'); if(chartChannels2) chartChannels2.destroy();
+    chartChannels2 = new Chart(ctx,{type:'bar',data:{labels:channels, datasets:[{label:'Amount', data:sums}]}}); }
+  const can2 = document.getElementById('chart-top-offices-2');
+  if(can2){ const ctx2 = can2.getContext('2d');
+    const officeMap = {}; for(const r of STATE.filteredData){ const o=r['office-name']||r['office']||'Unknown'; officeMap[o]=officeMap[o]||{digital:0}; officeMap[o].digital+= sumNumeric(r, SETTINGS.digitalChannels.filter(c=>SETTINGS.columns.includes(c))); }
+    const arr = Object.keys(officeMap).map(o=>({office:o, digitalAmt: officeMap[o].digital})).sort((a,b)=>b.digitalAmt-a.digitalAmt).slice(0,20);
+    if(chartTop2) chartTop2.destroy(); chartTop2 = new Chart(ctx2,{type:'bar',data:{labels:arr.map(a=>a.office), datasets:[{label:'Digital Amount', data:arr.map(a=>a.digitalAmt)}]}, options:{indexAxis:'y'}}); }
 }
 
-// Export CSV
-function exportCSV(){
-  if(!STATE.filteredData.length){ alert('No data loaded'); return }
-  const cols = SETTINGS.columns;
-  const csv = Papa.unparse({fields:cols, data: STATE.filteredData.map(r=>cols.map(c=>r[c]||''))});
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  saveAs(blob, 'exported-data.csv');
+// ===== Exports & Template =====
+function exportCSV(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const cols = SETTINGS.columns; const csv = Papa.unparse({fields:cols, data: STATE.filteredData.map(r=>cols.map(c=>r[c]||''))}); const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); saveAs(blob, 'exported-data.csv'); }
+function exportPDF(){ if(!STATE.filteredData.length){ alert('No data loaded'); return } const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cols = SETTINGS.columns.slice(0,10); const rows = STATE.filteredData.map(r=>cols.map(c=>r[c]||'')); doc.text('Digital Transactions Report', 14, 16); doc.autoTable({startY:22, head:[cols], body:rows}); doc.save('report.pdf'); }
+function downloadTemplate(){ const cols = SETTINGS.columns.length?SETTINGS.columns:['office-name','office-id','cash','cheque','credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','product-name']; const csv = Papa.unparse({fields:cols, data: []}); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); saveAs(blob,'dt_template.csv'); }
+function importSettings(){ const txt = prompt('Paste settings JSON'); if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderCharts(); renderKPIs(); }catch(e){ alert('Invalid JSON') } }
+
+// ===== File & Controls Events =====
+function bindEvents(){
+  document.getElementById('btn-login').addEventListener('click', login);
+  document.getElementById('btn-logout').addEventListener('click', logout);
+  document.getElementById('btn-reset-data').addEventListener('click', async ()=>{ if(!confirm('Reset to defaults?')) return; localStorage.clear(); await initDefaults(); location.reload(); });
+  document.querySelectorAll('.tab-btn').forEach(btn=> btn.addEventListener('click', ()=> showTab(btn.dataset.tab)));
+  const tUp = document.getElementById('template-upload'); if(tUp) tUp.addEventListener('change', function(e){ const f=e.target.files[0]; if(!f) return; Papa.parse(f,{header:true,skipEmptyLines:true,complete:function(res){ SETTINGS.columns = Object.keys(res.data[0]||{}); saveSettings(); renderDigitalChannels(SETTINGS.columns); alert('Template loaded.'); }}); });
+  const csvUp = document.getElementById('csv-upload'); if(csvUp) csvUp.addEventListener('change', e=> handleCSVFile(e.target.files[0]));
+  const fo = document.getElementById('filter-office'); if(fo) fo.addEventListener('change', applyFilters);
+  const st = document.getElementById('search-text'); if(st) st.addEventListener('input', applyFilters);
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+  document.getElementById('btn-export-pdf').addEventListener('click', exportPDF);
+  document.getElementById('btn-download-template').addEventListener('click', downloadTemplate);
+  document.getElementById('export-settings').addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(SETTINGS, null, 2)],{type:'application/json'}); saveAs(blob,'dt_settings.json'); });
+  document.getElementById('import-settings').addEventListener('click', importSettings);
+  // User list actions
+  document.getElementById('btn-add-user').addEventListener('click', addOrUpdateUser);
+  document.getElementById('user-list').addEventListener('click', async function(e){ if(e.target.classList.contains('btn-del')){ const u=e.target.dataset.user; deleteUser(u);} if(e.target.classList.contains('btn-edit')){ const u=e.target.dataset.user; const users = JSON.parse(localStorage.getItem('dt_users')); document.getElementById('new-username').value=u; document.getElementById('new-password').value=''; document.getElementById('new-role').value=users[u].role; }});
 }
 
-// Export PDF
-function exportPDF(){
-  if(!STATE.filteredData.length){ alert('No data loaded'); return }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const cols = SETTINGS.columns.slice(0,10); // limit columns for page width
-  const rows = STATE.filteredData.map(r=>cols.map(c=>r[c]||''));
-  doc.text('Digital Transactions Report', 14, 16);
-  doc.autoTable({startY:22, head:[cols], body:rows});
-  doc.save('report.pdf');
-}
+// ===== CSV & Admin =====
+function handleCSVFile(file){ if(!file) return; Papa.parse(file,{header:true,skipEmptyLines:true,complete:function(results){ STATE.rawData = results.data; SETTINGS.columns = Object.keys(STATE.rawData[0]||{}); saveSettings(); renderDigitalChannels(SETTINGS.columns); prepareFilters(); applyFilters(); }}); }
+function renderDigitalChannels(columns){ const wrap = document.getElementById('digital-channels'); if(!wrap) return; wrap.innerHTML=''; const cols = columns && columns.length? columns: SETTINGS.columns; const chs = cols.filter(c=>typeof c==='string'); if(!chs.length){ wrap.innerHTML='<div class="text-xs text-gray-500">No columns yet. Upload template or CSV.</div>';return} for(const c of chs){ const id='ch_'+c.replace(/[^a-z0-9]/gi,'_'); const checked = SETTINGS.digitalChannels.includes(c)?'checked':''; const div=document.createElement('div'); div.className='flex items-center gap-2'; div.innerHTML=`<input type='checkbox' id='${id}' data-col='${c}' ${checked} /> <label for='${id}'>${c}</label>`; wrap.appendChild(div); } wrap.addEventListener('change', function(){ const chs=Array.from(wrap.querySelectorAll('input[type=checkbox]')).filter(i=>i.checked).map(i=>i.dataset.col); SETTINGS.digitalChannels = chs; saveSettings(); renderCharts(); renderKPIs(); }); }
+async function addOrUpdateUser(){ const u=document.getElementById('new-username').value.trim(); const p=document.getElementById('new-password').value; const r=document.getElementById('new-role').value; if(!u||!p){ alert('username & password required'); return } const users=JSON.parse(localStorage.getItem('dt_users')); users[u]={passwordHash: await sha256(p), role:r}; localStorage.setItem('dt_users', JSON.stringify(users)); renderUserList(); document.getElementById('new-username').value=''; document.getElementById('new-password').value=''; }
+function deleteUser(username){ if(!confirm('Delete user '+username+'?')) return; const users=JSON.parse(localStorage.getItem('dt_users')); delete users[username]; localStorage.setItem('dt_users', JSON.stringify(users)); renderUserList(); }
+function renderUserList(){ const ul=document.getElementById('user-list'); if(!ul) return; ul.innerHTML=''; const users=JSON.parse(localStorage.getItem('dt_users')); for(const k of Object.keys(users)){ const li=document.createElement('li'); li.className='flex justify-between'; li.innerHTML = `<span>${k} (${users[k].role})</span><span><button data-user='${k}' class='btn-edit text-xs mr-1'>Edit</button><button data-user='${k}' class='btn-del text-xs text-red-600'>Delete</button></span>`; ul.appendChild(li); } }
 
-// Download template
-function downloadTemplate(){
-  const cols = SETTINGS.columns.length?SETTINGS.columns:['office-name','office-id','cash','cheque','credit-card','debit-card','upi','neft','rtgs','wallet','qr-scan','product-name'];
-  const csv = Papa.unparse({fields:cols, data: []});
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  saveAs(blob,'dt_template.csv');
-}
-
-// Import settings JSON (prompt)
-function importSettings(){
-  const txt = prompt('Paste settings JSON');
-  if(!txt) return; try{ const s = JSON.parse(txt); SETTINGS = s; saveSettings(); alert('Imported'); renderDigitalChannels(SETTINGS.columns); }catch(e){ alert('Invalid JSON') }
-}
-
-// Wire events
-document.getElementById('btn-login').addEventListener('click', login);
-document.getElementById('btn-logout').addEventListener('click', ()=>{logout();});
-document.getElementById('btn-reset-data').addEventListener('click', async ()=>{ if(!confirm('Reset to defaults?')) return; localStorage.clear(); await initDefaults(); location.reload(); });
-document.getElementById('btn-add-user').addEventListener('click', addOrUpdateUser);
-
-// delegate edit/delete
-document.getElementById('user-list').addEventListener('click', async function(e){ if(e.target.classList.contains('btn-del')){ const u = e.target.dataset.user; deleteUser(u);} if(e.target.classList.contains('btn-edit')){ const u = e.target.dataset.user; const users = JSON.parse(localStorage.getItem('dt_users')); document.getElementById('new-username').value=u; document.getElementById('new-password').value=''; document.getElementById('new-role').value=users[u].role; }});
-
-// template upload
-document.getElementById('template-upload').addEventListener('change', function(e){ const f = e.target.files[0]; if(!f) return; Papa.parse(f,{header:true,skipEmptyLines:true,complete:function(res){ SETTINGS.columns = Object.keys(res.data[0]||{}); saveSettings(); renderDigitalChannels(SETTINGS.columns); alert('Template loaded.'); }});});
-
-// CSV upload
-document.getElementById('csv-upload').addEventListener('change', function(e){ handleCSVFile(e.target.files[0]); });
-
-// filters
-document.getElementById('filter-office').addEventListener('change', applyFilters);
-document.getElementById('search-text').addEventListener('input', applyFilters);
-
-// digital channels checkbox binding (save when changed)
-document.getElementById('digital-channels').addEventListener('change', function(e){ const chs = Array.from(document.querySelectorAll('#digital-channels input[type=checkbox]')).filter(i=>i.checked).map(i=>i.dataset.col); SETTINGS.digitalChannels = chs; saveSettings(); renderCharts(); renderKPIs(); });
-
-// exports
-document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-document.getElementById('btn-export-pdf').addEventListener('click', exportPDF);
-document.getElementById('btn-download-template').addEventListener('click', downloadTemplate);
-document.getElementById('export-settings').addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(SETTINGS, null, 2)],{type:'application/json'}); saveAs(blob,'dt_settings.json'); });
-document.getElementById('import-settings').addEventListener('click', importSettings);
-
-// initial load
-(async()=>{ await initDefaults(); loadSettings(); renderDigitalChannels(SETTINGS.columns); renderUserList();
-  // If you wish to auto-login for demo uncomment below (not recommended in production)
-  // document.getElementById('login-username').value='superadmin'; document.getElementById('login-password').value=DEFAULT_PASSWORD; 
+// ===== Boot =====
+(async()=>{
+  await initDefaults();
+  loadSession();
+  if(STATE.user) location.hash = '#/dashboard'; else location.hash = '#/login';
+  bindEvents();
+  renderUserList();
+  renderDigitalChannels(SETTINGS.columns);
+  navigate();
 })();
-
 </script>
 </body>
 </html>
